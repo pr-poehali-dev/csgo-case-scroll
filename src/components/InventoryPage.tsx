@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RARITY_COLORS, RARITY_NAMES, WEAR_NAMES, formatPrice, getAllSkins, type Skin } from '@/data/cases';
+import { RARITY_COLORS, RARITY_NAMES, WEAR_NAMES, formatPrice, type Skin } from '@/data/cases';
 import Icon from '@/components/ui/icon';
 
 interface InventoryPageProps {
@@ -19,7 +19,7 @@ export default function InventoryPage({ inventory, onSell }: InventoryPageProps)
   const [selected, setSelected] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
-  const displayInventory = inventory.length > 0 ? inventory : getAllSkins().slice(0, 12);
+  const displayInventory = inventory;
 
   const filtered = displayInventory
     .filter(s =>

@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create: amount too small",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create", "amount": 10, "method": "card"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "Create: no secret → 503",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create", "amount": 500, "method": "card"},
+      "expectedStatus": 503
+    },
+    {
+      "name": "Status: missing paymentId",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "status"},
+      "expectedStatus": 400
+    }
+  ]
+}

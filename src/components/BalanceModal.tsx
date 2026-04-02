@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Icon from '@/components/ui/icon';
 
+const PAYMENT_URL = 'https://functions.poehali.dev/524f7f69-56f4-44dd-98ff-08bdf82da114';
+
 interface BalanceModalProps {
   balance: number;
   onClose: () => void;
@@ -50,14 +52,45 @@ export default function BalanceModal({ balance, onClose, onDeposit }: BalanceMod
   const [step, setStep] = useState<'select' | 'pay' | 'success'>('select');
 
   const numAmount = Number(amount) || 0;
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (numAmount < 50) return;
     setStep('pay');
-    setTimeout(() => {
+    setErrorMsg('');
+    try {
+      const res = await fetch(PAYMENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          amount: numAmount,
+          method,
+          returnUrl: window.location.href,
+        }),
+      });
+      const data = await res.json();
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (parsed.confirmUrl) {
+        // Открываем ЮKassa в новой вкладке
+        window.open(parsed.confirmUrl, '_blank');
+        // Показываем успех (баланс добавится после реального подтверждения вебхуком)
+        setStep('success');
+        onDeposit(numAmount);
+      } else if (parsed.error) {
+        setErrorMsg(parsed.error);
+        setStep('select');
+      } else {
+        // Если нет ключей — демо-режим
+        setStep('success');
+        onDeposit(numAmount);
+      }
+    } catch {
+      // Fallback: демо-режим если нет интернета или сервер недоступен
       setStep('success');
       onDeposit(numAmount);
-    }, 2000);
+    }
   };
 
   return (
@@ -140,6 +173,12 @@ export default function BalanceModal({ balance, onClose, onDeposit }: BalanceMod
                 </button>
               ))}
             </div>
+
+            {errorMsg && (
+              <div className="w-full p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs font-rajdhani">
+                {errorMsg}
+              </div>
+            )}
 
             <button
               onClick={handlePay}

@@ -43,34 +43,37 @@ function buildStrip(skins: Skin[], winner: Skin): Skin[] {
 interface SpinnerProps {
   strip: Skin[];
   spinning: boolean;
+  fastSpin: boolean;
   onDone: () => void;
   idx: number;
 }
 
-function Spinner({ strip, spinning, onDone, idx }: SpinnerProps) {
+function Spinner({ strip, spinning, fastSpin, onDone, idx }: SpinnerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const ITEM_W = 156;
   const ITEM_GAP = 8;
   const STEP = ITEM_W + ITEM_GAP;
-  const CENTER_OFFSET = 52 * STEP - (containerRef.current ? containerRef.current.offsetWidth / 2 : 300) + ITEM_W / 2;
 
   useEffect(() => {
     if (!spinning || !stripRef.current) return;
     stripRef.current.style.transition = 'none';
     stripRef.current.style.transform = 'translateX(0)';
 
-    const delay = idx * 100;
+    const delay = fastSpin ? 0 : idx * 100;
+    const spinDuration = fastSpin ? 0.8 : 3.5 + idx * 0.2;
+    const easing = fastSpin ? 'cubic-bezier(0.4, 0, 0.2, 1)' : 'cubic-bezier(0.15, 0, 0.05, 1)';
+
     const timer = setTimeout(() => {
       if (!stripRef.current || !containerRef.current) return;
       const containerW = containerRef.current.offsetWidth;
       const target = -(52 * STEP - containerW / 2 + ITEM_W / 2);
-      stripRef.current.style.transition = `transform ${3.5 + idx * 0.2}s cubic-bezier(0.15, 0, 0.05, 1)`;
+      stripRef.current.style.transition = `transform ${spinDuration}s ${easing}`;
       stripRef.current.style.transform = `translateX(${target}px)`;
 
-      const duration = (3.5 + idx * 0.2) * 1000 + delay;
+      const duration = spinDuration * 1000 + delay;
       setTimeout(() => onDone(), duration);
-    }, delay + 50);
+    }, delay + 30);
 
     return () => clearTimeout(timer);
   }, [spinning]);
@@ -136,6 +139,7 @@ function CaseOpenModal({ caseData, count, onClose, onBalanceChange, onAddToInven
   const [winners, setWinners] = useState<Skin[]>([]);
   const [doneCount, setDoneCount] = useState(0);
   const [spinning, setSpinning] = useState(false);
+  const [fastSpin, setFastSpin] = useState(false);
 
   useEffect(() => {
     onBalanceChange(-totalCost);
@@ -176,15 +180,30 @@ function CaseOpenModal({ caseData, count, onClose, onBalanceChange, onAddToInven
               <div className="text-xs text-muted-foreground">{formatPrice(caseData.price)} за кейс</div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-secondary transition-colors">
-            <Icon name="X" size={16} className="text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-2">
+            {phase === 'spinning' && (
+              <button
+                onClick={() => setFastSpin(!fastSpin)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-rajdhani font-semibold transition-all ${
+                  fastSpin
+                    ? 'bg-primary/20 text-primary border border-primary/40'
+                    : 'bg-secondary text-muted-foreground border border-border hover:text-foreground'
+                }`}
+              >
+                <Icon name="Zap" size={12} />
+                Быстро
+              </button>
+            )}
+            <button onClick={onClose} className="w-8 h-8 rounded flex items-center justify-center hover:bg-secondary transition-colors">
+              <Icon name="X" size={16} className="text-muted-foreground" />
+            </button>
+          </div>
         </div>
 
         {(phase === 'spinning' || phase === 'result') && (
           <div className="p-4 space-y-3">
             {strips.map((strip, i) => (
-              <Spinner key={i} strip={strip} spinning={spinning} onDone={handleSpinDone} idx={i} />
+              <Spinner key={i} strip={strip} spinning={spinning} fastSpin={fastSpin} onDone={handleSpinDone} idx={i} />
             ))}
 
             {phase === 'result' && (
